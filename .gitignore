@@ -1,0 +1,11 @@
+# Arquivo de configuração com senha
+.env
+config.json
+
+# Arquivos do sistema
+__pycache__/
+*.pyc
+
+# Banco de dados local
+*.sql
+*.db
