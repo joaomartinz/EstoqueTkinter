@@ -26,35 +26,36 @@ def mostrar_dataframe(df: pd.DataFrame, titulo: str):
         messagebox.showinfo(titulo, "Sem dados para exibir")
         return
 
-janela = tk.Toplevel(root)
-janela.title(titulo)
+    janela = tk.Toplevel(root)
+    janela.title(titulo)
 
-frame = ttk.Frame(janela)
-frame.pack(fill="both", expand=True)
+    frame = ttk.Frame(janela)
+    frame.pack(fill="both", expand=True)
 
-cols = list(df.columns)
-tree = ttk.Treeview(frame, columns=cols, show="headings")
+    cols = list(df.columns)
+    tree = ttk.Treeview(frame, columns=cols, show="headings")
 
-vsb = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
-tree.configure(yscrollcommand=vsb.set)
-vsb.pack(side="right", fill="y")
+    vsb = ttk.Scrollbar(frame, orient="vertical", command=tree.yview)
+    tree.configure(yscrollcommand=vsb.set)
+    vsb.pack(side="right", fill="y")
 
-hsb = ttk.Scrollbar(frame, orient="horizontal", command=tree.xview)
-tree.configure(xscrollcommand=hsb.set)
-hsb.pack(side="bottom", fill="x")
+    hsb = ttk.Scrollbar(frame, orient="horizontal", command=tree.xview)
+    tree.configure(xscrollcommand=hsb.set)
+    hsb.pack(side="bottom", fill="x")
 
-tree.pack(fill="both", expand=True)
+    tree.pack(fill="both", expand=True)
 
-for col in cols:
-    tree.heading(col, text=col)
-    tree.column(col, width=120, anchor="w")
+    for col in cols:
+        tree.heading(col, text=col)
+        tree.column(col, width=120, anchor="w")
 
-for _, row in df.iterrows():
-    vals = [("" if pd.isna(v) else str(v)) for v in row.tolist()]
-    tree.insert("", "end", values=vals)
+    for _, row in df.iterrows():
+        vals = [("" if pd.isna(v) else str(v)) for v in row.tolist()]
+        tree.insert("", "end", values=vals)
 
-janela.geometry("800x400")
+    janela.geometry("800x400")
 
+# === Funções ===
 def ver_estoque():
     mostrar_dataframe(produtos, "Estoque Atual")
 
@@ -64,7 +65,7 @@ def informacoes_fornecedores():
 def exportar():
     escolha = simpledialog.askstring("Exportar", "Escolha:\n1 - Produtos\n2 - Movimentações")
     if escolha not in ("1", "2"):
-        messagebox.showerror("Opção inválida!")
+        messagebox.showerror("Erro", "Opção inválida!")
         return
     if escolha == "1":
         df = produtos
@@ -81,9 +82,9 @@ def exportar():
             df.to_excel(f"{nome}.xlsx", index=False)
             messagebox.showinfo("Exportar", f"Arquivo {nome} salvo.")
         else:
-            messagebox.showerror("Opção inválida")
+            messagebox.showerror("Erro", "Opção inválida!")
     except Exception as e:
-        messagebox.showerror("Erro ao exportar", str(e))
+        messagebox.showerror("Erro", "Erro ao exportar", str(e))
             
 def buscar_produto_gui():
     popup = tk.Toplevel(root)
@@ -110,13 +111,13 @@ def buscar_produto_gui():
             try:
                 pid = int(termo)
             except ValueError:
-                messagebox.showerror("ID inválido.")
+                messagebox.showerror("Erro", "Opção inválida!")
             resultado = produtos[produtos["id_produto"] == pid]
         else:
             resultado = produtos[produtos["nome"].str.lower().str.contains(termo.lower(), na=False)]
         
         if resultado.empty:
-                messagebox.showinfo("Nenhum produto encontrado.")
+                messagebox.showinfo("Resultado", "Nenhum produto encontrado.")
                 return
         
         mostrar_dataframe(resultado, f"Resultados da busca ({len(resultado)})")
@@ -146,24 +147,25 @@ def adicionar_produto():
         qtd = entrada_qtd.get().strip()
 
         if not pid or not qtd:
-            messagebox.showerror("Preencha todos os campos.")
+            messagebox.showerror("Erro", "Preencha todos os campos.")
             return
 
         try:
             pid = int(pid)
             qtd = int(qtd)
         except ValueError:
-            messagebox.showerror("ID e quantidade devem ser números inteiros")
+            messagebox.showerror("Erro", "ID e quantidade devem ser números inteiros")
             return
         if qtd <= 0:
-            messagebox.showerror("A quantidade deve ser maior que zero.")   
+            messagebox.showerror("Erro", "A quantidade deve ser maior que zero.")   
             return
         
         try:
             with engine.begin() as conn:
                 conn.execute(
-                    text("UPDATE produtos SET quantidade_estoque_atual = quantidade_estoque_atual + qtd WHERE id_produto = :pid"),
+                    text("UPDATE produtos SET quantidade_estoque_atual = quantidade_estoque_atual + :qtd WHERE id_produto = :pid"),
                     {"qtd": qtd, "pid": pid}
+                )
 
             global produtos
             produtos = pd.read_sql("SELECT * FROM produtos", engine)
@@ -171,9 +173,9 @@ def adicionar_produto():
             messagebox.showinfo("Sucesso", f"{qtd} unidades adicionadas ao produto {pid}.")
             popup.destroy()
 
-                )
+                
         except Exception as e:
-            messagebox.showerror(f"Falha ao atualizar: {e}")
+            messagebox.showerror("Erro", f"Falha ao atualizar: {e}")
 
     btn_confirmar = tk.Button(popup, text="Confirmar", command=executar_adicao)
     btn_confirmar.pack(pady=8)
@@ -216,39 +218,63 @@ def cadastrar_produto():
         forn = entrada_forn.get().strip()
 
         if not nome or not categoria or not qtd or not preco or not forn:
-            messagebox.showerror("Preencha todos os campos.") 
+            messagebox.showerror("Erro", "Preencha todos os campos.") 
             return
 
         try:
             qtd = int(qtd)
-            preco = int(preco)
+            preco = float(preco)
             forn = int(forn) 
         except ValueError:
-            messagebox.showerror("OS valores devem ser númericos")
+            messagebox.showerror("Erro", "OS valores devem ser númericos")
             return
 
         if qtd < 0 or preco < 0:
-            messagebox.showerror("Quantidade e preço devem ser maiores que zero.")
+            messagebox.showerror("Erro", "Quantidade e preço devem ser maiores que zero.")
 
         try:
             with engine.begin() as conn:
                 conn.execute(
                     text("INSERT INTO produtos (nome, categoria, quantidade_estoque_atual, preco_unitario, id_Fornecedor) VALUES (:nome, :cat, :qtd, :preco, :forn)"),
-                    {"nome": nome, "cat": categoria "qtd": qtd, "preco": preco, "forn": forn}
+                    {"nome": nome, "cat": categoria, "qtd": qtd, "preco": preco, "forn": forn}
                 ) 
             global produtos
             produtos = pd.read_sql("SELECT * FROM produtos", engine)
 
-            messagebox.showinfo(f"Produto {nome} cadastrado.")
+            messagebox.showinfo("Sucesso", f"Produto {nome} cadastrado.")
             popup.destroy()
 
         except Exception as e:
-            messagebox.showerror("Falha ao cadastrar: {e}")
+            messagebox.showerror("Erro", "Falha ao cadastrar: {e}")
 
     btn_confirmar = tk.Button(popup, text="Cadastrar", command=executar_cadastro)
     btn_confirmar.pack(pady=10)
 
-       
+# === Janela Principal ===
+root = tk.Tk()
+root.title("Estoque")
+root.geometry("450x560")
+
+titulo = tk.Label(root, text="Estoque", font=("Arial", 16 ,"bold"))
+titulo.pack(pady=12)
+
+# === Botões ===
+btn_cfg = {"width": 40, "padx": 5, "pady": 6}
+
+tk.Button(root, text="Ver estoque Atual", command=ver_estoque, **btn_cfg). pack()
+tk.Button(root, text="informações dos fornecedores", command=informacoes_fornecedores, **btn_cfg). pack()
+tk.Button(root, text="Exportar relatórios", command=exportar, **btn_cfg). pack()
+
+tk.Label(root, text="— Consultas —", font=("Arial", 11, "bold")).pack(pady=(8,0))
+tk.Button(root, text="Buscar produto", command=buscar_produto_gui, **btn_cfg). pack()
+
+tk.Label(root, text="- Adicionar / Cadastrar produto =", font=("Arial", 11, "bold")).pack(pady=(8,0))
+tk.Button(root, text="Adicionar produto", command=adicionar_produto, **btn_cfg). pack()
+tk.Button(root, text="Cadastrar produto", command=cadastrar_produto, **btn_cfg). pack()
+
+tk.Button(root, text="Sair", command=root.quit, **btn_cfg).pack(pady=12)
+
+root.mainloop()
 
 
 
