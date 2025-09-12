@@ -1,0 +1,3 @@
+Sistema de Controle de Estoque
+
+Aplicação em Python + Tkinter integrada ao MySQL para controle de estoque. Permite visualizar produtos, fornecedores e movimentações, realizar buscas, adicionar e cadastrar produtos, além de exportar relatórios em CSV ou Excel. Interface simples e intuitiva com DataFrames exibidos em tabelas interativas. Ideal para pequenos negócios que desejam gerenciar estoque de forma prática e eficiente.
